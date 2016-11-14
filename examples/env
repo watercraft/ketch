@@ -1,0 +1,2 @@
+export KETCH_MEMBER_LIST=server1,server2,server3,server4
+export KETCH_DB_BIN_DIR=/usr/lib/postgresql/9.5/bin

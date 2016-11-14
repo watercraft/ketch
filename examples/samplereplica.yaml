@@ -1,0 +1,10 @@
+data:
+- attributes:
+    name: mydb1
+    quorumGroupSize: 3
+    dbConfig:
+      username: myuser
+      password: mypassword
+      port: 5432
+      closedPort: 5433
+  type: replica
