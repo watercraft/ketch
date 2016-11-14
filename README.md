@@ -5,7 +5,7 @@ manage a cluster of replicated databases. Ketch provided enhanced
 reliability by configuring synchronous replication to a majority
 within a quorum group and reconfiguring the group around failures.
 The protocol for reconfiguring quorum groups is documented in the
-KetchProtocal.pdf file that accompanies this project.
+KetchProtocol.pdf file that accompanies this project.
 
 ## Project Status
 
