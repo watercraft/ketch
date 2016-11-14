@@ -37,7 +37,7 @@ in a Ketch configuration.
 
 The CLI interfaces in Ketch can take a combination of environment
 variables and command line arguments.  Here I'm setting environment
-variables that are common to all four server instences:
+variables that are common to all four server instances:
 
 ```
 # export KETCH_MEMBER_LIST=server1,server2,server3,server4
@@ -53,7 +53,7 @@ And now I can start the servers:
 # ketch --api-server server4 --data-dir ~/db/server4 run &
 ```
 
-We use ketchctl to create a database instence in the cluster:
+We use ketchctl to create a database instance in the cluster:
 
 ```
 # cat examples/samplereplica.yaml
@@ -70,6 +70,19 @@ data:
 # ketchctl login -s server1
 # ketchctl create replica -f examples/samplereplica.yaml
 ...
+```
+
+After a minute or so the database can be used in the normal way:
+
+```
+psql -h server1 -U myuser mydb1
+```
+
+Pending a planned integration with [SkyDNS](https://github.com/skynetservices/skydns)
+you should be able to locate the service with the database name:
+
+```
+psql -h mydb1.acme.com -U myuser mydb1
 ```
 
 Ketchctl is also used to query local resources: runtime,
@@ -95,34 +108,19 @@ data:
     name: server2
   id: 23becdbc-20db-4ddd-892c-31a77a0a1714
   type: server
-- attributes:
-    endpoint:
-      addr: 127.0.2.3
-      port: 7459
-    id: 9c53f88b-38ab-4246-b7ec-00ba5b4dc6f4
-    name: server3
-  id: 9c53f88b-38ab-4246-b7ec-00ba5b4dc6f4
-  type: server
-- attributes:
-    endpoint:
-      addr: 127.0.2.4
-      port: 7459
-    id: 5b975dff-222f-4e70-ac60-ef750ca6cb49
-    name: server4
-  id: 5b975dff-222f-4e70-ac60-ef750ca6cb49
-  type: server
+...
 ```
 
 Replicas represent the local copies of a database and have a 1-1
 relation with dbmgr's which are non-persisted objects that track
 execution of Postgres servers and utilities. Epochs server both the
-epoch and lease parts of the Ketch protocol.  Runtime is a singlton
-that persists state related to the local instence.
+epoch and lease parts of the Ketch protocol.  Runtime is a singleton
+that persists state related to the local instance.
 
 All Ketch state is stored under the '--data-dir' directory.  Ketch
 objects are stored in a [Bolt](https://github.com/boltdb/bolt)
 database called ketch.db while Postgres data is stored under a
 subdirectory named by the Replica ID. Postgres socket/lock files are
 stored directly under the '--data-dir' directory. Though a Replica
-object in Ketch may be deleted for safty in the protocol, Postgres
+object in Ketch may be deleted for safety in the protocol, Postgres
 data is always preserved for debugging and recovery.
