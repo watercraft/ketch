@@ -72,17 +72,17 @@ data:
 ...
 ```
 
-After a minute or so the database can be used in the normal way:
+After a short time the database can be used in the normal way:
 
 ```
-psql -h server1 -U myuser mydb1
+# psql -h server1 -U myuser mydb1
 ```
 
 Pending a planned integration with [SkyDNS](https://github.com/skynetservices/skydns)
 you should be able to locate the service with the database name:
 
 ```
-psql -h mydb1.acme.com -U myuser mydb1
+# psql -h mydb1.mydomain.com -U myuser mydb1
 ```
 
 Ketchctl is also used to query local resources: runtime,
