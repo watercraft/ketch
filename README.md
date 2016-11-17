@@ -7,6 +7,8 @@ within a quorum group and reconfiguring the group around failures.
 The protocol for reconfiguring quorum groups is documented in the
 KetchProtocol.pdf file that accompanies this project.
 
+![Quorum Group](QuorumGroup.png "Reconfiguring the Quorum Group")
+
 ## Project Status
 
 This project is under development and not ready for production
