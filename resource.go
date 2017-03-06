@@ -17,40 +17,50 @@ import (
 	"github.com/watercraft/ketch/api"
 )
 
-type initFunc func(*ResourceMgr, api.Resource) (error, int)
-type getListFunc func(*ResourceMgr) api.ResourceList
-type updateAfterLoadFunc func(*ResourceMgr, api.Resource) bool
-
-type ResourceMgr struct {
-	k               *Ketch
-	myType          api.Type
-	assignIDs       bool
-	named           bool
-	persist         bool
-	resource        map[uuid.UUID]api.Resource
-	resourceByName  map[string]uuid.UUID
-	init            initFunc
-	getList         getListFunc
-	updateAfterLoad updateAfterLoadFunc
+type ResourceMgrInterface interface {
+	Init(ketch Ketch, myType api.Type, instance ResourceMgrInstance)
+	RefreshResources()
+	GetResources() api.ResourceList
+	ClearResources()
+	CreateResources(list api.ResourceList) (api.ResourceList, error, int)
+	LoadResources()
 }
 
-func (k *Ketch) installResourceMgr(mgr *ResourceMgr) {
-	mgr.k = k
-	mgr.resource = make(map[uuid.UUID]api.Resource)
-	mgr.resourceByName = make(map[string]uuid.UUID)
-	k.resourceMgr[mgr.myType] = mgr
-	if mgr.persist {
-		mgr.loadResources()
-	}
+type ResourceMgrInstance interface {
+	InitResource(api.Resource) (error, int)
+	GetList() api.ResourceList
+	UpdateAfterLoad(api.Resource) bool
+}
+
+type ResourceMgr struct {
+	instance       ResourceMgrInstance
+	k              *Ketch
+	myType         api.Type
+	assignIDs      bool
+	named          bool
+	persist        bool
+	resource       map[uuid.UUID]api.Resource
+	resourceByName map[string]uuid.UUID
+}
+
+// Links up an instance of the resource manager
+func (m *ResourceMgr) Init(k *Ketch, instance ResourceMgrInstance) {
+	m.k = k
+	m.instance = instance
+	m.resource = make(map[uuid.UUID]api.Resource)
+	m.resourceByName = make(map[string]uuid.UUID)
+	m.k.resourceMgr[m.myType] = m
+	m.LoadResources()
 }
 
 // RefreshResources
 // calls resource specific getList() to refresh resources.
 func (m *ResourceMgr) RefreshResources() {
-	if m.getList != nil {
+	list := m.instance.GetList()
+	if list != nil {
 		m.ClearResources()
 		// TODO: Error handling
-		_, _, _ = m.CreateResources(m.getList(m))
+		_, _, _ = m.CreateResources(list)
 	}
 }
 
@@ -115,17 +125,15 @@ func (m *ResourceMgr) CreateResources(list api.ResourceList) (api.ResourceList, 
 			})).Error(err.Error())
 			return nil, err, http.StatusInternalServerError
 		}
-		if m.init != nil {
-			err, status := m.init(m, resource)
-			if err != nil {
-				m.k.log.WithFields(Locate(logrus.Fields{
-					"type": m.myType,
-					"err":  err,
-					"name": common.Name,
-					"id":   common.ID,
-				})).Error("Failed to initialize resource")
-				return nil, err, status
-			}
+		err, status := m.instance.InitResource(resource)
+		if err != nil {
+			m.k.log.WithFields(Locate(logrus.Fields{
+				"type": m.myType,
+				"err":  err,
+				"name": common.Name,
+				"id":   common.ID,
+			})).Error("Failed to initialize resource")
+			return nil, err, status
 		}
 	}
 
@@ -185,10 +193,10 @@ func (m *ResourceMgr) CreateResources(list api.ResourceList) (api.ResourceList, 
 	return list, nil, http.StatusCreated
 }
 
-// loadResources
+// LoadResources
 // loads existing resources from database into Ketch.
 // Called locked.
-func (m *ResourceMgr) loadResources() {
+func (m *ResourceMgr) LoadResources() {
 
 	// Iterate over resources
 	err := m.k.db.Update(func(tx *bolt.Tx) error {
@@ -225,29 +233,27 @@ func (m *ResourceMgr) loadResources() {
 			}
 			m.resource[common.ID] = resource
 			m.resourceByName[common.Name] = common.ID
-			if m.updateAfterLoad != nil {
-				if m.updateAfterLoad(m, resource) {
-					out, err := json.Marshal(resource)
-					if err != nil {
-						m.k.log.WithFields(Locate(logrus.Fields{
-							"type": m.myType,
-							"name": common.Name,
-							"id":   common.ID,
-							"err":  err,
-						})).Error("Failed to marshal resource")
-						return err
-					}
-					err = bk.Put(common.ID.Bytes(), out)
-					if err != nil {
-						m.k.log.WithFields(Locate(logrus.Fields{
-							"type": m.myType,
-							"name": common.Name,
-							"key":  common.ID,
-							"out":  out,
-							"err":  err,
-						})).Error("Failed to put resource")
-						return err
-					}
+			if m.instance.UpdateAfterLoad(resource) {
+				out, err := json.Marshal(resource)
+				if err != nil {
+					m.k.log.WithFields(Locate(logrus.Fields{
+						"type": m.myType,
+						"name": common.Name,
+						"id":   common.ID,
+						"err":  err,
+					})).Error("Failed to marshal resource")
+					return err
+				}
+				err = bk.Put(common.ID.Bytes(), out)
+				if err != nil {
+					m.k.log.WithFields(Locate(logrus.Fields{
+						"type": m.myType,
+						"name": common.Name,
+						"key":  common.ID,
+						"out":  out,
+						"err":  err,
+					})).Error("Failed to put resource")
+					return err
 				}
 			}
 		}

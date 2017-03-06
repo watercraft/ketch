@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -25,16 +26,32 @@ const (
 	DBPWExt    string      = "pw"
 )
 
+type DBMgr struct {
+	ResourceMgr
+}
+
 func (k *Ketch) installDBMgrMgr() {
-	k.installResourceMgr(&ResourceMgr{
-		myType:          api.TypeDBMgr,
-		assignIDs:       false,
-		named:           true,
-		persist:         false,
-		init:            nil,
-		getList:         nil,
-		updateAfterLoad: nil,
-	})
+	m := &DBMgr{
+		ResourceMgr: ResourceMgr{
+			myType:    api.TypeDBMgr,
+			assignIDs: false,
+			named:     true,
+			persist:   false,
+		},
+	}
+	m.Init(k, m)
+}
+
+func (m *DBMgr) InitResource(in api.Resource) (error, int) {
+	return nil, http.StatusOK
+}
+
+func (m *DBMgr) GetList() api.ResourceList {
+	return nil
+}
+
+func (m *DBMgr) UpdateAfterLoad(resource api.Resource) bool {
+	return false
 }
 
 func (k *Ketch) handleSignals(sigCh chan os.Signal) {

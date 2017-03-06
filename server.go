@@ -5,24 +5,34 @@
 package ketch
 
 import (
+	"net/http"
+
 	"github.com/satori/go.uuid"
 
 	"github.com/watercraft/ketch/api"
 )
 
-func (k *Ketch) installServerMgr() {
-	k.installResourceMgr(&ResourceMgr{
-		myType:          api.TypeServer,
-		assignIDs:       false,
-		named:           true,
-		persist:         false,
-		init:            nil,
-		getList:         getServerList,
-		updateAfterLoad: nil,
-	})
+type ServerMgr struct {
+	ResourceMgr
 }
 
-func getServerList(m *ResourceMgr) api.ResourceList {
+func (k *Ketch) installServerMgr() {
+	m := &ServerMgr{
+		ResourceMgr: ResourceMgr{
+			myType:    api.TypeServer,
+			assignIDs: false,
+			named:     true,
+			persist:   false,
+		},
+	}
+	m.Init(k, m)
+}
+
+func (m *ServerMgr) InitResource(in api.Resource) (error, int) {
+	return nil, http.StatusOK
+}
+
+func (m *ServerMgr) GetList() api.ResourceList {
 	nodes := m.k.list.Members()
 	var list api.ResourceList
 	for _, node := range nodes {
@@ -39,4 +49,8 @@ func getServerList(m *ResourceMgr) api.ResourceList {
 		list = append(list, server)
 	}
 	return list
+}
+
+func (m *ServerMgr) UpdateAfterLoad(resource api.Resource) bool {
+	return false
 }

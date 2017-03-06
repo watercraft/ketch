@@ -19,19 +19,23 @@ const (
 	maxQuorumGroupSize uint = 3
 )
 
-func (k *Ketch) installReplicaMgr() {
-	k.installResourceMgr(&ResourceMgr{
-		myType:          api.TypeReplica,
-		assignIDs:       true,
-		named:           true,
-		persist:         true,
-		init:            initReplica,
-		getList:         nil,
-		updateAfterLoad: nil,
-	})
+type ReplicaMgr struct {
+	ResourceMgr
 }
 
-func initReplica(m *ResourceMgr, in api.Resource) (error, int) {
+func (k *Ketch) installReplicaMgr() {
+	m := &ReplicaMgr{
+		ResourceMgr: ResourceMgr{
+			myType:    api.TypeReplica,
+			assignIDs: true,
+			named:     true,
+			persist:   true,
+		},
+	}
+	m.Init(k, m)
+}
+
+func (m *ReplicaMgr) InitResource(in api.Resource) (error, int) {
 
 	replica := in.(*api.Replica)
 	if replica.QuorumGroupSize == 0 {
@@ -53,6 +57,14 @@ func initReplica(m *ResourceMgr, in api.Resource) (error, int) {
 	replica.Epochs = make(map[string]*api.EpochSpec)
 
 	return nil, http.StatusOK
+}
+
+func (m *ReplicaMgr) GetList() api.ResourceList {
+	return nil
+}
+
+func (m *ReplicaMgr) UpdateAfterLoad(resource api.Resource) bool {
+	return false
 }
 
 // Returns true if the replica's membership has not changed

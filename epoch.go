@@ -5,6 +5,8 @@
 package ketch
 
 import (
+	"net/http"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/satori/go.uuid"
 
@@ -12,16 +14,32 @@ import (
 	"github.com/watercraft/ketch/msg"
 )
 
+type EpochMgr struct {
+	ResourceMgr
+}
+
 func (k *Ketch) installEpochMgr() {
-	k.installResourceMgr(&ResourceMgr{
-		myType:          api.TypeEpoch,
-		assignIDs:       false,
-		named:           false,
-		persist:         true,
-		init:            nil,
-		getList:         nil,
-		updateAfterLoad: nil,
-	})
+	m := &EpochMgr{
+		ResourceMgr: ResourceMgr{
+			myType:    api.TypeEpoch,
+			assignIDs: false,
+			named:     false,
+			persist:   true,
+		},
+	}
+	m.Init(k, m)
+}
+
+func (m *EpochMgr) InitResource(in api.Resource) (error, int) {
+	return nil, http.StatusOK
+}
+
+func (m *EpochMgr) GetList() api.ResourceList {
+	return nil
+}
+
+func (m *EpochMgr) UpdateAfterLoad(resource api.Resource) bool {
+	return false
 }
 
 // Send setup requests for the current epoch.

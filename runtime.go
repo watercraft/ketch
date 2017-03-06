@@ -5,22 +5,36 @@
 package ketch
 
 import (
+	"net/http"
+
 	"github.com/watercraft/ketch/api"
 )
 
-func (k *Ketch) installRuntimeMgr() {
-	k.installResourceMgr(&ResourceMgr{
-		myType:          api.TypeRuntime,
-		assignIDs:       true,
-		named:           true,
-		persist:         true,
-		init:            nil,
-		getList:         nil,
-		updateAfterLoad: updateRuntimeAfterLoad,
-	})
+type RuntimeMgr struct {
+	ResourceMgr
 }
 
-func updateRuntimeAfterLoad(m *ResourceMgr, in api.Resource) bool {
+func (k *Ketch) installRuntimeMgr() {
+	m := &RuntimeMgr{
+		ResourceMgr: ResourceMgr{
+			myType:    api.TypeRuntime,
+			assignIDs: true,
+			named:     true,
+			persist:   true,
+		},
+	}
+	m.Init(k, m)
+}
+
+func (m *RuntimeMgr) InitResource(in api.Resource) (error, int) {
+	return nil, http.StatusOK
+}
+
+func (m *RuntimeMgr) GetList() api.ResourceList {
+	return nil
+}
+
+func (m *RuntimeMgr) UpdateAfterLoad(in api.Resource) bool {
 
 	// If boottime or name changed, update boottime record
 	m.k.runtime = in.(*api.Runtime)
